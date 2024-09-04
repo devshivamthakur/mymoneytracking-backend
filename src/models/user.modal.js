@@ -1,4 +1,5 @@
 import {Schema, model} from "mongoose"
+import jwt from "jsonwebtoken"
 
 const schema = new Schema ({
    name:{
@@ -21,4 +22,16 @@ const schema = new Schema ({
     timestamps:true,
 })
 
+schema.methods.generateAccessToken = function(){
+    return jwt.sign(
+        {
+            _id: this._id,
+            email: this.email,
+            googleId: this.googleId,
+        },
+        process.env.JWT_ACCESS_TOKEN
+    )
+}
+
 export const UserModal = model("user", schema)
+
