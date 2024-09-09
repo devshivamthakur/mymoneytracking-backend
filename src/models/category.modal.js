@@ -10,9 +10,13 @@ const schema = new mongoose.Schema({
         required: true
     },
     short_name: {
+        type: String
+    },
+
+    category_name:{
         type: String,
         required: true
-    },
+    }
 },{
     timestamps: true,
 })
