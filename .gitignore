@@ -54,9 +54,12 @@ web_modules/
 # Optional eslint cache
 .eslintcache
 
+<<<<<<< HEAD
+=======
 # Optional stylelint cache
 .stylelintcache
 
+>>>>>>> 0b9e6a7e4e2d25fc8e4c6c8f7da729199f449dc1
 # Microbundle cache
 .rpt2_cache/
 .rts2_cache_cjs/
@@ -72,12 +75,19 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
+<<<<<<< HEAD
+# dotenv environment variables file
+.env
+.env.test
+.env.production
+=======
 # dotenv environment variable files
 .env
 .env.development.local
 .env.test.local
 .env.production.local
 .env.local
+>>>>>>> 0b9e6a7e4e2d25fc8e4c6c8f7da729199f449dc1
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -100,6 +110,8 @@ dist
 # vuepress build output
 .vuepress/dist
 
+<<<<<<< HEAD
+=======
 # vuepress v2.x temp and cache directory
 .temp
 .cache
@@ -107,6 +119,7 @@ dist
 # Docusaurus cache and generated files
 .docusaurus
 
+>>>>>>> 0b9e6a7e4e2d25fc8e4c6c8f7da729199f449dc1
 # Serverless directories
 .serverless/
 
@@ -128,3 +141,9 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+<<<<<<< HEAD
+
+# End of https://mrkandreev.name/snippets/gitignore-generator/#Node
+.DS_Store
+=======
+>>>>>>> 0b9e6a7e4e2d25fc8e4c6c8f7da729199f449dc1
