@@ -259,7 +259,38 @@ const getAllTransactions = asyncHandler(async (req, res) => {
     // Aggregation query with pagination
     const result = await TransactionModal.aggregate([
         { $match: matchConditions },
-        { $sort: sortConditions }
+        { $sort: sortConditions },
+        {
+            $lookup: {
+                from: "categories",
+                localField: "category",
+                foreignField: "_id",
+                as: "categoryInfo",
+                pipeline:[
+                    {
+                        $project:{
+                            _id:0
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields:{
+                category:{
+                    $first:"$categoryInfo"
+                }
+            }
+        },
+        {
+            $project:{
+                categoryInfo:0,
+                budget: 0,
+                updatedAt: 0,
+                user: 0
+
+            }
+        }
     ])
         .limit(limit)
         .skip(page);
