@@ -27,8 +27,8 @@ const addTransaction = asyncHandler(async (req, res) => {
     if (error) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.details[0].message)
 
     //check for transaction date it  must be from current Month
-    const isCurrentMonthDate = moment(req.body.transaction_date).isSame(moment(), "month")  
-    if(!isCurrentMonthDate) throw new ApiError(HTTP_STATUS_CODES.OK, "Transaction date must be from current Month")
+    const isCurrentMonthDate = moment(req.body.transaction_date).isSame(moment(), "month")
+    if (!isCurrentMonthDate) throw new ApiError(HTTP_STATUS_CODES.OK, "Transaction date must be from current Month")
 
     //validate and get category id
     const categoryId = await CategoryModal.findOne({
@@ -37,10 +37,10 @@ const addTransaction = asyncHandler(async (req, res) => {
     if (!categoryId) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, "please provide a valid category")
 
     //validate the category id
-    const validateBudget =await BudgetModal.findOne({_id: new Mongoose.Types.ObjectId(req.body.budget_id)})
-    if(!validateBudget) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, "Invalid budget id")
+    const validateBudget = await BudgetModal.findOne({ _id: new Mongoose.Types.ObjectId(req.body.budget_id) })
+    if (!validateBudget) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, "Invalid budget id")
 
-    const createdTransaction =await TransactionModal.create({
+    const createdTransaction = await TransactionModal.create({
         amount: req.body.amount,
         budget: new Mongoose.Types.ObjectId(req.body.budget_id),
         category: categoryId.id,
@@ -53,7 +53,7 @@ const addTransaction = asyncHandler(async (req, res) => {
     if (!createdTransaction.id) throw new ApiError(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR, "Transaction not created due to internal server error.")
 
     //now update the spend in the budget
-    validateBudget.spendAmount = (validateBudget.spendAmount || 0) +  Number(req.body.amount)
+    validateBudget.spendAmount = (validateBudget.spendAmount || 0) + Number(req.body.amount)
     validateBudget.save()
 
     return res.status(200).json(new ApiResponse(HTTP_STATUS_CODES.OK, createdTransaction.id, "transaction created successfully."))
@@ -61,18 +61,18 @@ const addTransaction = asyncHandler(async (req, res) => {
 })
 
 //get transaction info based on transaction id
-const getTransactionInfo = asyncHandler(async(req, res)=>{
+const getTransactionInfo = asyncHandler(async (req, res) => {
     const schema = Joi.object({
         transaction_id: Joi.string().regex(MONGO_OBJECT_ID_REGX).required().messages({
             'string.pattern.base': 'invalid transaction_id',
-        }), 
+        }),
     })
 
     //validate transaction id
-    const {error} = schema.validate(req.query)
-    if(error) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.message)
+    const { error } = schema.validate(req.query)
+    if (error) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.message)
 
-     const transactionInfo =await TransactionModal.aggregate([
+    const transactionInfo = await TransactionModal.aggregate([
         {
             $match: {
                 _id: new Mongoose.Types.ObjectId(req.query.transaction_id)
@@ -84,34 +84,34 @@ const getTransactionInfo = asyncHandler(async(req, res)=>{
                 localField: "category",
                 foreignField: "_id",
                 as: "categoryInfo",
-                pipeline:[
+                pipeline: [
                     {
-                        $project:{
-                            _id:0
+                        $project: {
+                            _id: 0
                         }
                     }
                 ]
             }
         },
         {
-            $addFields:{
-                category:{
-                    $first:"$categoryInfo"
+            $addFields: {
+                category: {
+                    $first: "$categoryInfo"
                 }
             }
         },
         {
-            $project:{
-                categoryInfo:0,
+            $project: {
+                categoryInfo: 0,
                 budget: 0,
                 updatedAt: 0,
                 user: 0
 
             }
         }
-     ])
-     
-     if(!transactionInfo.length) throw new ApiError(HTTP_STATUS_CODES.NOT_FOUND, "no transaction found")
+    ])
+
+    if (!transactionInfo.length) throw new ApiError(HTTP_STATUS_CODES.NOT_FOUND, "no transaction found")
 
     return res.status(HTTP_STATUS_CODES.OK).json(new ApiResponse(HTTP_STATUS_CODES.OK, transactionInfo[0], "success"))
 
@@ -123,7 +123,7 @@ const deleteTransaction = asyncHandler(async (req, res) => {
     const schema = Joi.object({
         transaction_id: Joi.string().regex(MONGO_OBJECT_ID_REGX).required().messages({
             'string.pattern.base': 'invalid transaction_id',
-        }), 
+        }),
     });
 
     // Validate transaction ID
@@ -157,28 +157,128 @@ const deleteTransaction = asyncHandler(async (req, res) => {
 //update transaction
 
 //get all transactions by month, date, category and sort order
-const getAllTransactions = asyncHandler(async(req, res)=>{
+const getAllTransactions = asyncHandler(async (req, res) => {
     const schema = Joi.object({
-        month: Joi.date().required(),
+        month: Joi.string()
+            .pattern(/^\d{4}-(0[1-9]|1[0-2])$/, 'yyyy-mm')
+            .messages({ 'string.pattern.base': 'Month must be in yyyy-mm format' })
+            .required(),
         filterBy: Joi.string().valid(...filterByValues),
         sortBy: Joi.string().valid(...sortByValues),
-        category: Joi.string().min(3),
-        selected_date: Joi.date()
+        category_id: Joi.string().regex(/^[0-9a-fA-F]{24}$/).messages({
+            'string.pattern.base': 'Provide a valid category ID',
+        }),
+        selected_date: Joi.date(),
+        limit: Joi.number().default(10),
+        offset: Joi.number().default(1),
+    });
 
-    })
-
-    const {error} = schema.validate(req.body)
-    if(error){
-        throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.message)
+    const { error } = schema.validate(req.body);
+    if (error) {
+        throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.message);
     }
 
-    // const result = 
+    // Extracting Year and Month
+    const [year, month] = req.body.month.split('-');
+
+    const { limit = 10, offset = 1 } = req.body;
+    const page = (offset - 1) * limit;
+
+    // Helper function to build match conditions
+    const buildMatchConditions = (req) => {
+        const matchConditions = {
+            user: new Mongoose.Types.ObjectId(req.user._id),
+            $expr: {
+                $and: [
+                    { $eq: [{ $month: "$transactionDate" }, Number(month)] },
+                    { $eq: [{ $year: "$transactionDate" }, Number(year)] }
+                ]
+            }
+        };
+
+        // Conditionally add selected date
+        if (req.body.selected_date) {
+            matchConditions.$expr.$and.push({
+                $eq: [{ $dateToString: { format: "%Y-%m-%d", date: "$transactionDate" } }, moment(req.body.selected_date).format("YYYY-MM-DD")]
+            });
+        }
+
+        // Conditionally add category filter
+        if (req.body.category_id) {
+            matchConditions.$expr.$and.push({
+                $eq: ["$category", new Mongoose.Types.ObjectId(req.body.category_id)]
+            });
+        }
+
+        // Conditionally add filterBy conditions
+        if (req.body.filterBy) {
+            if (req.body.filterBy === filterByValues[0]) {
+                // Today
+                matchConditions.$expr.$and.push({
+                    $eq: [{ $dateToString: { format: "%Y-%m-%d", date: "$transactionDate" } }, moment().format("YYYY-MM-DD")]
+                });
+            } else if (req.body.filterBy === filterByValues[1]) {
+                // This week
+                const startOfWeek = moment().startOf('isoWeek').toDate();
+                const endOfWeek = moment().endOf('isoWeek').toDate();
+                matchConditions.transactionDate = { $gte: startOfWeek, $lte: endOfWeek };
+            }
+        }
+
+        return matchConditions;
+    };
+
+    // Helper function to build sort conditions
+    const buildSortConditions = (req) => {
+        let sortConditions = { transactionDate: -1 }; // Default sort by transactionDate descending
+
+        if (req.body.sortBy) {
+            switch (req.body.sortBy) {
+                case sortByValues[0]: // Sort by amount descending
+                    sortConditions = { amount: -1 };
+                    break;
+                case sortByValues[1]: // Sort by amount ascending
+                    sortConditions = { amount: 1 };
+                    break;
+                case sortByValues[2]: // Sort by transactionDate descending
+                    sortConditions = { transactionDate: -1 };
+                    break;
+                case sortByValues[3]: // Sort by transactionDate ascending
+                    sortConditions = { transactionDate: 1 };
+                    break;
+            }
+        }
+
+        return sortConditions;
+    };
+
+    // Build match and sort conditions
+    const matchConditions = buildMatchConditions(req);
+    const sortConditions = buildSortConditions(req);
+
+    // Aggregation query with pagination
+    const result = await TransactionModal.aggregate([
+        { $match: matchConditions },
+        { $sort: sortConditions }
+    ])
+        .limit(limit)
+        .skip(page);
+
+    // Error handling for empty results
+    if (!result.length) {
+        throw new ApiError(HTTP_STATUS_CODES.NOT_FOUND, "No results found");
+    }
+
+    // Respond with successful data
+    return res
+        .status(HTTP_STATUS_CODES.OK)
+        .json(new ApiResponse(HTTP_STATUS_CODES.OK, result, "Transactions found successfully."));
+});
 
 
-})
- 
 export {
     addTransaction,
     getTransactionInfo,
-    deleteTransaction
+    deleteTransaction,
+    getAllTransactions
 }
