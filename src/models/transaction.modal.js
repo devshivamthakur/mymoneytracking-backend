@@ -5,7 +5,6 @@ const schema = new mongoose.Schema({
     amount: {
         type: Number,
         required: true,
-
     },
     transactionDate: {
         type: Date,
@@ -31,7 +30,6 @@ const schema = new mongoose.Schema({
 // Post middleware to run after a transaction is deleted
 schema.post('findOneAndDelete', async function(doc) {
     if (doc) {
-        console.log('Deleted transaction:', doc);
 
         const budgetInfo = await BudgetModal.findById(doc.budget)
         const finalSpend = (budgetInfo.spendAmount || 0) - doc.amount
