@@ -6,6 +6,7 @@ import { BudgetRoutes } from "./budget.routes.js";
 import { getCategories } from "../controllers/category.controlle.js";
 import { TransactionRoutes } from "./transaction.routes.js";
 import { staticcontentRoutes } from "./staticcontent.routes.js";
+import { firebaseRoutes } from "./firebase.route.js";
 
 const router = Router()
 
@@ -13,10 +14,12 @@ const router = Router()
 router.use('/api/v1/users', userRoutes);
 
 //secure routes
-router.use("/api/v1/budget", verifyJwt, BudgetRoutes)
-router.get("/api/v1/category", verifyJwt, getCategories)
-router.use("/api/v1/transaction", verifyJwt, TransactionRoutes)
+router.use("/api/v1/budget",verifyJwt ,BudgetRoutes)
+router.get("/api/v1/category",verifyJwt ,getCategories)
+router.use("/api/v1/transaction",verifyJwt ,TransactionRoutes)
 router.use("/api/v1/staticcontent", staticcontentRoutes)
+router.use("/api/v1/firebase",verifyJwt ,firebaseRoutes)
+
 
 
 export {

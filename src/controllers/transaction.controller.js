@@ -12,19 +12,6 @@ import { filterByValues, MONGO_OBJECT_ID_REGX, sortByValues } from "../utils/con
 
 //create a transaction
 const addTransaction = asyncHandler(async (req, res) => {
-    const schema = Joi.object({
-        amount: Joi.number().required().min(1),
-        transaction_date: Joi.date().required(),
-        description: Joi.string(), // optional
-        category: Joi.string().required(),
-        budget_id: Joi.string().regex(MONGO_OBJECT_ID_REGX).required().messages({
-            'string.pattern.base': 'invalid budget id',
-        }), // Validates MongoDB ObjectId
-    })
-
-    //vailidate request body
-    const { error } = schema.validate(req.body)
-    if (error) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.details[0].message)
 
     //check for transaction date it  must be from current Month
     const isCurrentMonthDate = moment(req.body.transaction_date).isSame(moment(), "month")
@@ -62,15 +49,6 @@ const addTransaction = asyncHandler(async (req, res) => {
 
 //get transaction info based on transaction id
 const getTransactionInfo = asyncHandler(async (req, res) => {
-    const schema = Joi.object({
-        transaction_id: Joi.string().regex(MONGO_OBJECT_ID_REGX).required().messages({
-            'string.pattern.base': 'invalid transaction_id',
-        }),
-    })
-
-    //validate transaction id
-    const { error } = schema.validate(req.query)
-    if (error) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.message)
 
     const transactionInfo = await TransactionModal.aggregate([
         {
@@ -120,15 +98,6 @@ const getTransactionInfo = asyncHandler(async (req, res) => {
 
 //delete transaction based on transaction id
 const deleteTransaction = asyncHandler(async (req, res) => {
-    const schema = Joi.object({
-        transaction_id: Joi.string().regex(MONGO_OBJECT_ID_REGX).required().messages({
-            'string.pattern.base': 'invalid transaction_id',
-        }),
-    });
-
-    // Validate transaction ID
-    const { error } = schema.validate(req.query);
-    if (error) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.message);
 
     // Get the first and last day of the current month
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -158,25 +127,6 @@ const deleteTransaction = asyncHandler(async (req, res) => {
 
 //get all transactions by month, date, category and sort order
 const getAllTransactions = asyncHandler(async (req, res) => {
-    const schema = Joi.object({
-        month: Joi.string()
-            .pattern(/^\d{4}-(0[1-9]|1[0-2])$/, 'yyyy-mm')
-            .messages({ 'string.pattern.base': 'Month must be in yyyy-mm format' })
-            .required(),
-        filterBy: Joi.string().valid(...filterByValues),
-        sortBy: Joi.string().valid(...sortByValues),
-        category_id: Joi.string().regex(/^[0-9a-fA-F]{24}$/).messages({
-            'string.pattern.base': 'Provide a valid category ID',
-        }),
-        selected_date: Joi.date(),
-        limit: Joi.number().default(10),
-        offset: Joi.number().default(1),
-    });
-
-    const { error } = schema.validate(req.body);
-    if (error) {
-        throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.message);
-    }
 
     // Extracting Year and Month
     const [year, month] = req.body.month.split('-');
