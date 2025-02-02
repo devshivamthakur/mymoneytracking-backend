@@ -9,7 +9,6 @@ This project is a backend API built using Node.js, Express, and MongoDB. It allo
 - [Environment Variables](#environment-variables)
 - [Project Structure](#project-structure)
 - [Technologies Used](#technologies-used)
-- [Swagger API Documentation](#swagger-api-documentation)
 
 ## Features
 - User authentication using JWT.
@@ -46,6 +45,4 @@ Make sure you have the following installed:
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/budget-transaction-api.git   
-   cd budget-transaction-api
-   npm install
+   git clone https://github.com/your-username/budget-transaction-api.git
