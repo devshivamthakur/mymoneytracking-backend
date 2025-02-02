@@ -5,6 +5,9 @@ import { UserModal } from "../models/user.modal.js"
 
 export const verifyJwt = asyncHandler(async (req, _, next) => {
     try {
+        if(!req?.header("Authorization")) throw new ApiError(401, "Unauthorized request")
+        if(!req?.header("Authorization")?.startsWith("Bearer")) throw new ApiError(401, "Unauthorized request")
+
         const token = req?.header("Authorization")?.replace("Bearer ", "")
         if (!token) throw new ApiError(401, "Unauthorized request")
 
