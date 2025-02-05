@@ -10,6 +10,11 @@ import { IndexRouter } from './routes/index.js';
 import logger from './utils/logger.js';
 import moment from 'moment';
 
+// const swaggerUi = require('swagger-ui-express');
+// const swaggerDocument = require('./swagger-output.json'); // Generated JSON file
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from '../src/utils/swagger-output.json' assert { type: 'json' };
+
 // Load environment variables
 dotenv.config();
 
@@ -51,6 +56,27 @@ const limiter = rateLimit({
 app.use(limiter);
 app.use(IndexRouter)
 
+// Serve Swagger API Docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+    swaggerOptions: {
+        docExpansions: "none",
+        persistAuthorization: true,
+        authAction: {
+            BearerAuth: {
+              name: 'Bearer',
+              schema: {
+                type: 'Authorization',
+                in: 'header',
+                name: 'Authorization',
+              },
+              value: 'Bearer your.jwt.token',  // Placeholder for the token (this can be left blank when not used)
+            },
+        
+     }
+    }
+
+  }));
+  
 // Routes
 
 // Error handling
