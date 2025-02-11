@@ -1,5 +1,7 @@
 import { firebaseDb } from "../db/FireBaseInit.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { HTTP_STATUS_CODES } from "../utils/ErrorConstant.js";
 
 const collectionName = "users";
 
@@ -57,8 +59,45 @@ const deleteAllUserHavingEmptyId = asyncHandler(async (req, res, next) => {
     }
 });
 
+const getAllOtherServices = asyncHandler(async (req, res, next) => {
+    const otherServiceDataRef = firebaseDb.collection('otherServices');
+    const snapshot = await otherServiceDataRef.get();
+    const otherServices = [];
+    
+    snapshot.forEach((doc) => {
+        otherServices.push({ id: doc.id, ...doc.data() });
+    });
+
+    res.status(200).json({
+        success: true,
+        otherServices,
+    });
+});
+
+const loadVersionViseOtherServices = asyncHandler(async (req, res, next) => {
+
+    const {appVersion, services} = req.body
+
+    const versionedCollectionRef = firebaseDb.collection('other-services').doc(appVersion);
+    const versionSnapshot = await versionedCollectionRef.get();
+    if(!versionSnapshot.exists){
+        await versionedCollectionRef.set({
+            services: services
+        })
+    }else{
+        await versionedCollectionRef.update({
+            services: services
+        })
+    }
+
+    res.status(HTTP_STATUS_CODES.OK).json(new ApiResponse(HTTP_STATUS_CODES.OK, {message: "Data loaded successfully"}))
+
+})
+
 
 export {
     showAllUser,
-    deleteAllUserHavingEmptyId
+    deleteAllUserHavingEmptyId,
+    getAllOtherServices,
+    loadVersionViseOtherServices
 };
