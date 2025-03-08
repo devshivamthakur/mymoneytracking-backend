@@ -20,3 +20,21 @@ export const validateLoadVersionViseOtherServices = asyncHandler(async (req, _, 
     if (error) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.message)
     next()
 })
+
+export const validateLoadVersionViseTopQuickService = asyncHandler(async (req, _, next) => {
+    // const {appVersion, services} = req.body
+
+    const schema = Joi.object({
+        appVersion: Joi.string().required(),
+        services: Joi.array().items({
+            title: Joi.string().required(),
+            screenName: Joi.string().required(),
+            icon: Joi.string().required(),
+            order: Joi.number().optional(),
+            id: Joi.string().optional()
+        }).required()
+    })
+    const { error } = schema.validate(req.body)
+    if (error) throw new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, error.message)
+    next()
+})

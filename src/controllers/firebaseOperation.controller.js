@@ -94,10 +94,47 @@ const loadVersionViseOtherServices = asyncHandler(async (req, res, next) => {
 
 })
 
+const getAllTopQuickServices = asyncHandler(async (req, res, next) => {
+    const otherServiceDataRef = firebaseDb.collection('top_quick_links')
+    const snapshot = await otherServiceDataRef.get();
+    const otherServices = [];
+    
+    snapshot.forEach((doc) => {
+        otherServices.push({ id: doc.id, ...doc.data() });
+    });
+
+    res.status(200).json({
+        success: true,
+        otherServices,
+    });
+});
+
+const loadVersionVisetopQuick = asyncHandler(async (req, res, next) => {
+
+    const {appVersion, services} = req.body
+
+    const versionedCollectionRef = firebaseDb.collection('top_quick_links').doc(appVersion);
+    const versionSnapshot = await versionedCollectionRef.get();
+    if(!versionSnapshot.exists){
+        await versionedCollectionRef.set({
+            services: services
+        })
+    }else{
+        await versionedCollectionRef.update({
+            services: services
+        })
+    }
+
+    res.status(HTTP_STATUS_CODES.OK).json(new ApiResponse(HTTP_STATUS_CODES.OK, {message: "Data loaded successfully"}))
+
+})
+
 
 export {
     showAllUser,
     deleteAllUserHavingEmptyId,
     getAllOtherServices,
-    loadVersionViseOtherServices
+    loadVersionViseOtherServices,
+    getAllTopQuickServices,
+    loadVersionVisetopQuick
 };
