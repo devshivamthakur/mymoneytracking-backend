@@ -1,13 +1,15 @@
 import { firebaseDb } from "../db/FireBaseInit.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { PastMonthCollection } from "../utils/constants.js";
 import { HTTP_STATUS_CODES } from "../utils/ErrorConstant.js";
+import { FIREBASE_COLLECTIONS } from "../utils/FireBaseCollectionsConstants.js";
+import { generateCsv, generateCsvAndSendMail } from "../utils/Utils.js";
 
-const collectionName = "users";
 
 const showAllUser = asyncHandler(async (req, res, next) => {
     try {
-        const usersRef = firebaseDb.collection(collectionName);
+        const usersRef = firebaseDb.collection(FIREBASE_COLLECTIONS.USERS);
         const snapshot = await usersRef.get();
 
         const users = [];
@@ -37,7 +39,7 @@ const showAllUser = asyncHandler(async (req, res, next) => {
 
 const deleteAllUserHavingEmptyId = asyncHandler(async (req, res, next) => {
     try {
-        const usersRef = firebaseDb.collection(collectionName);
+        const usersRef = firebaseDb.collection(FIREBASE_COLLECTIONS.USERS);
         const snapshot = await usersRef.get();
         
         const batch = firebaseDb.batch();
@@ -60,7 +62,7 @@ const deleteAllUserHavingEmptyId = asyncHandler(async (req, res, next) => {
 });
 
 const getAllOtherServices = asyncHandler(async (req, res, next) => {
-    const otherServiceDataRef = firebaseDb.collection('otherServices');
+    const otherServiceDataRef = firebaseDb.collection(FIREBASE_COLLECTIONS.OTHER_SERVICES);
     const snapshot = await otherServiceDataRef.get();
     const otherServices = [];
     
@@ -78,7 +80,7 @@ const loadVersionViseOtherServices = asyncHandler(async (req, res, next) => {
 
     const {appVersion, services} = req.body
 
-    const versionedCollectionRef = firebaseDb.collection('other-services').doc(appVersion);
+    const versionedCollectionRef = firebaseDb.collection(FIREBASE_COLLECTIONS.OTHER_SERVICES).doc(appVersion);
     const versionSnapshot = await versionedCollectionRef.get();
     if(!versionSnapshot.exists){
         await versionedCollectionRef.set({
@@ -95,7 +97,7 @@ const loadVersionViseOtherServices = asyncHandler(async (req, res, next) => {
 })
 
 const getAllTopQuickServices = asyncHandler(async (req, res, next) => {
-    const otherServiceDataRef = firebaseDb.collection('top_quick_links')
+    const otherServiceDataRef = firebaseDb.collection(FIREBASE_COLLECTIONS.TOP_QUICK_LINKS)
     const snapshot = await otherServiceDataRef.get();
     const otherServices = [];
     
@@ -113,7 +115,7 @@ const loadVersionVisetopQuick = asyncHandler(async (req, res, next) => {
 
     const {appVersion, services} = req.body
 
-    const versionedCollectionRef = firebaseDb.collection('top_quick_links').doc(appVersion);
+    const versionedCollectionRef = firebaseDb.collection(FIREBASE_COLLECTIONS.TOP_QUICK_LINKS).doc(appVersion);
     const versionSnapshot = await versionedCollectionRef.get();
     if(!versionSnapshot.exists){
         await versionedCollectionRef.set({
@@ -129,6 +131,43 @@ const loadVersionVisetopQuick = asyncHandler(async (req, res, next) => {
 
 })
 
+const deletePastYearBudgetData = asyncHandler(async (req, res, next) => {
+    try {
+        const usersRef = firebaseDb.collection(FIREBASE_COLLECTIONS.USERS);
+        const snapshot = await usersRef.get();
+        const deleteData = {};
+
+        for (const doc of snapshot.docs) {
+            const data = doc.data();
+            const userDoc = firebaseDb.collection(FIREBASE_COLLECTIONS.USERS).doc(data.id);
+
+            for (const month of PastMonthCollection) {
+                const monthDoc = userDoc.collection("monthly_data").doc(month);
+                const monthSnapshot = await monthDoc.get();
+
+                if (monthSnapshot.exists) {
+                    deleteData[data.email] = [...(deleteData[data.email] || []), ...(monthSnapshot.data().transactions || [])];
+                    monthSnapshot.ref.delete();
+                }
+            }
+        }
+
+        // Generate CSV
+        for (const email in deleteData) {
+            if(!deleteData[email] || deleteData[email].length === 0) continue;
+            if(email == "shivamthakurcool01@gmail.com"){
+                generateCsvAndSendMail(deleteData[email], `past_year_data-${email}.csv`, email);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "All past year budget data have been deleted",
+        });
+    } catch (error) {
+        next(error);
+    }
+});
 
 export {
     showAllUser,
@@ -136,5 +175,6 @@ export {
     getAllOtherServices,
     loadVersionViseOtherServices,
     getAllTopQuickServices,
-    loadVersionVisetopQuick
+    loadVersionVisetopQuick,
+    deletePastYearBudgetData
 };
