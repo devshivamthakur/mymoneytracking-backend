@@ -13,7 +13,7 @@ import moment from 'moment';
 // const swaggerUi = require('swagger-ui-express');
 // const swaggerDocument = require('./swagger-output.json'); // Generated JSON file
 import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from '../src/utils/swagger-output.json' assert { type: 'json' };
+import swaggerDocument from '../src/utils/swagger-output.json' with { type: 'json' };
 
 // Load environment variables
 dotenv.config();
